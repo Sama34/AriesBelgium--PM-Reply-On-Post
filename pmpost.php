@@ -25,12 +25,12 @@ function pmpost_info()
 	return array(
 		"name"			=> "PM Reply On Post",
 		"description"	=> $donate_button."Allows you to reply on a post via PM.",
-		"website"		=> "",
+		"website"		=> "http://mods.mybb.com/view/pm-reply-to-post",
 		"author"		=> "Aries-Belgium",
 		"authorsite"	=> "http://community.mybb.com/user-3840.html",
-		"version"		=> "1.0",
+		"version"		=> "1.1",
 		"guid" 			=> "40004d07553e6778cc325161c70a3979",
-		"compatibility" => "14*,16*"
+		"compatibility" => "16*"
 	);
 }
 
@@ -59,19 +59,32 @@ function pmpost_deactivate()
  */
 function pmpost_quote_post()
 {
-	global $mybb, $subject, $message, $send;
+	global $mybb;
 	
 	if(isset($mybb->input['pid']))
 	{
-		$_post = get_post($mybb->input['pid']);
-		$subject = (strpos($_post['subject'], "RE:") === false ? "RE: " : "") .htmlspecialchars_uni($_post['subject']);
-		$message = "[quote='".htmlspecialchars_uni($_post['username'])."' pid='".intval($_post['pid'])."' dateline='".intval($_post['dateline'])."']\n".htmlspecialchars_uni($_post['message'])."\n[/quote]";
-		
-		// mybb 1.4 compatibility
-		$send = str_replace(
-			array("name=\"subject\"", "<textarea name=\"message\" id=\"message\" rows=\"20\" cols=\"70\" tabindex=\"4\">"),
-			array("name=\"subject\" value=\"{$subject}\"", "<textarea name=\"message\" id=\"message\" rows=\"20\" cols=\"70\" tabindex=\"4\">{$message}"),
-			$send
-		);
+		global $db, $subject, $message, $send;
+
+		// Fetch unviewable forums
+		$unviewable_forums = get_unviewable_forums();
+		if($unviewable_forums)
+		{
+			$unviewable_forums = 'AND p.fid NOT IN ('.$unviewable_forums.')';
+		}
+
+		$query = $db->simple_select('posts p LEFT JOIN '.TABLE_PREFIX.'users u ON (u.uid=p.uid)', 'p.subject, p.message, p.pid, p.tid, p.username, p.dateline, p.fid, p.visible, u.username AS userusername', 'p.pid=\''(int)$mybb->input['pid']'\''.$unviewable_forums, array('limit' => 1));
+
+		while($quoted_post = $db->fetch_array($query))
+		{
+			if(!is_moderator($quoted_post['fid']) && $quoted_post['visible'] == 0)
+			{
+				continue;
+			}
+
+			require_once MYBB_ROOT."inc/functions_posting.php";
+
+			$subject = (!my_strpos($quoted_post['subject'], "RE:") ? "RE: " : "").htmlspecialchars_uni($quoted_post['subject']); // should we parse bad words here?
+			$message = parse_quoted_message($quoted_post);
+		}
 	}
 }
