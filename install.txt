@@ -1,0 +1,16 @@
+INSTALL
+=======
+1) Copy the pmpost.php file from the zip into /path/to/mybb/inc/plugins/
+2) Go to AdminCP > Configuration > Plugins and Activate the "PM Reply To Post" plugin
+
+UPGRADING
+=========
+1) Unactivate the 'PM Reply To Post' plugin
+2) Copy the new files to the /path/to/mybb/inc/plugins/ folder
+3) Activate the plugin again
+
+UNINSTALL
+=========
+1) Go to AdminCP > Configuration > Plugins and Deactivate the "PM Reply To Post" plugin
+2) Remove the following files and folders
+ - /path/to/mybb/inc/plugins/pmpost.php
